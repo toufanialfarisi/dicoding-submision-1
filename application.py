@@ -52,7 +52,7 @@ def add_book():
         with cursor.execute("INSERT INTO dbo.blogpost (author, title, content) VALUES ('{}','{}','{}');".format(author, title, content)):
             print ('Successfully Inserted!')
         output = [author, title, content]
-        flash('new post was added', 'success')
+        flash('new book was added', 'success')
         # print(output)
         return redirect(url_for('list_book'))
     return render_template('add_book.html', form=form)
@@ -63,7 +63,7 @@ def delete_book(id):
     tsql = "DELETE FROM blogpost WHERE id = ?"
     with cursor.execute(tsql,id):
         print ('Successfully Deleted!')
-    flash('Post successfully deleted', 'success')
+    flash('Book successfully deleted', 'success')
     return redirect(url_for('list_book'))
 
 if __name__ == "__main__":
