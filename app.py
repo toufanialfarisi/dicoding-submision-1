@@ -10,11 +10,11 @@ password = '#serigala95'
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 cursor = cnxn.cursor()
 
-book = Flask(__name__)
-book.jinja_env.filters['zip'] = zip
-book.config['SECRET_KEY'] = 'mysecretkey'
+app = Flask(__name__)
+app.jinja_env.filters['zip'] = zip
+app.config['SECRET_KEY'] = 'mysecretkey'
 
-@book.route('/list-book')
+@app.route('/list-book')
 def list_book():
     tsql = "SELECT * FROM blogpost;"
     row_res = []
@@ -40,7 +40,7 @@ def list_book():
     return render_template('list_book.html', containers=row, no=range(1,len(id_)+1), id=id_, author=author_, title=title_, content=content_)
 
 
-@book.route('/', methods=['POST', 'GET'])
+@app.route('/', methods=['POST', 'GET'])
 # @login_required
 def add_book():
     form = Post()
@@ -57,7 +57,7 @@ def add_book():
         return redirect(url_for('list_book'))
     return render_template('add_book.html', form=form)
 
-@book.route('/delete/<int:id>', methods=['POST','GET'])
+@app.route('/delete/<int:id>', methods=['POST','GET'])
 # @login_required
 def delete_book(id):
     tsql = "DELETE FROM blogpost WHERE id = ?"
@@ -67,4 +67,4 @@ def delete_book(id):
     return redirect(url_for('list_book'))
 
 if __name__ == "__main__":
-    book.run(debug=True)
+    app.run(debug=True)
