@@ -1,70 +1,103 @@
 from flask import redirect, url_for, render_template, Blueprint, flash, request, Flask
 from forms import Post
+import os
+import uuid
+import sys
+from azure.storage.blob import BlockBlobService, PublicAccess
+from forms import UploadImage
 import numpy as np
 import pyodbc
+from werkzeug.utils import secure_filename
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from azure.cognitiveservices.vision.computervision.models import VisualFeatureTypes
+from msrest.authentication import CognitiveServicesCredentials
 
-server = 'toufani-ra-server.database.windows.net'
-database = 'toufani-ra-db'
-username = 'toufani1515'
-password = '#serigala95'
-cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
-cursor = cnxn.cursor()
+# Get endpoint and key from environment variables
+# import os
+endpoint = 'https://southeastasia.api.cognitive.microsoft.com/'
+key = 'd4b8cbabf63c4220afe95a25b956b975'
+
+# Set credentials
+credentials = CognitiveServicesCredentials(key)
+
+# Create client
+client = ComputerVisionClient(endpoint, credentials)
+
+# server = 'toufani-ra-server.database.windows.net'
+# database = 'toufani-ra-db'
+# username = 'toufani1515'
+# password = '#serigala95'
+# cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' +
+#                       server+';DATABASE='+database+';UID='+username+';PWD=' + password)
+# cursor = cnxn.cursor()
 
 app = Flask(__name__)
 app.jinja_env.filters['zip'] = zip
 app.config['SECRET_KEY'] = 'mysecretkey'
 
-@app.route('/list-book')
-def list_book():
-    tsql = "SELECT * FROM blogpost;"
-    row_res = []
-    id_  = []
-    author_ = []
-    title_ = []
-    content_ = []
-    with cursor.execute(tsql) :
-        row = cursor.fetchmany()
-        row2 = cursor.fetchall()
-        for i in row2:
-            id_.append(i[0])
-            author_.append(i[1])
-            title_.append(i[2])
-            content_.append(i[3])
-            print('id', i[0])
-            print('author', i[1])
-            print('title', i[2])
-            print('content', i[3])
-    # row = list(id_, author_, title_, content_)
-    print(row)
 
-    return render_template('list_book.html', containers=row, no=range(1,len(id_)+1), id=id_, author=author_, title=title_, content=content_)
+UPLOAD_FOLDER = os.getcwd() + '/static/uploads'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 
-@app.route('/', methods=['POST', 'GET'])
-# @login_required
-def add_book():
-    form = Post()
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/vision', methods=['POST', 'GET'])
+def vision():
+    form = UploadImage()
     if request.method == 'POST':
-        author  = form.author.data
-        title   = form.title.data
-        content = form.content.data
-        # tsql = "INSERT INTO dbo.blogpost (author, title, content) VALUES (?,?,?);"
-        with cursor.execute("INSERT INTO dbo.blogpost (author, title, content) VALUES ('{}','{}','{}');".format(author, title, content)):
-            print ('Successfully Inserted!')
-        output = [author, title, content]
-        flash('new book was added', 'success')
-        # print(output)
-        return redirect(url_for('list_book'))
-    return render_template('add_book.html', form=form)
+        # data = str(form.image.data)
+        if 'file' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
 
-@app.route('/delete/<int:id>', methods=['POST','GET'])
-# @login_required
-def delete_book(id):
-    tsql = "DELETE FROM blogpost WHERE id = ?"
-    with cursor.execute(tsql,id):
-        print ('Successfully Deleted!')
-    flash('Book successfully deleted', 'success')
-    return redirect(url_for('list_book'))
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit a empty part without filename
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            image_path = os.path.join(
+                os.getcwd() + '/static/uploads', filename)
+            file.save(image_path)
+
+        image_analysis = client.analyze_image(
+            image_path, visual_features=[VisualFeatureTypes.tags])
+
+        for tag in image_analysis.tags:
+            print(tag)
+
+        models = client.list_models()
+
+        for x in models.models_property:
+            print(x)
+
+        # type of prediction
+        domain = "landmarks"
+
+        # Public domain image of Eiffel tower
+        url = "https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg"
+
+        # English language response
+        language = "en"
+
+        analysis = client.analyze_image_by_domain(domain, image_path, language)
+
+        for landmark in analysis.result["landmarks"]:
+            print(landmark["name"])
+            print(landmark["confidence"])
+
+        flash('sukses tersimpan', 'success')
+
+        return render_template('cognitive.html', form=form)
+    return render_template('cognitive.html', form=form)
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5005)

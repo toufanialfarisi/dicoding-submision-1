@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<div class="content-section">
+
+    <form action="" method="POST" enctype="multipart/form-data">
+
+        {{ form.hidden_tag() }}
+
+        <fieldset class="form-group">
+            {{ form.image.label(class='form-control-label') }}
+            {% if form.image.errors %}
+            {{ form.image(class='form-control form-control-lg is-invalid') }}
+            <div class="invalid-feedback">
+                {% for error in form.image.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {{ form.image(class='form-control form-control-lg') }}
+        </fieldset>
+        <fieldset class="form-group">
+            {{ form.upload(class='btn btn-outline-info') }}
+        </fieldset>
+
+    </form>
+</div>
+
+
+{% endblock %}

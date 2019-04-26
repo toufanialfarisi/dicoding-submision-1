@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<div class="col-md-12">
+    <article class="media content-section" style="text-align:center ; margin-left:auto ; margin-right:auto">
+        <div class="media-body">
+
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">filename</th>
+                        <th scope="col">date created</th>
+                        <!-- <th scope="col">Description</th> -->
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for idx,num,a,t,c in id|zip(no, author, title, content) %}
+                    <tr>
+                        <td>{{ num }}</td>
+                        <td>{{ a }}</td>
+                        <td>{{ t }}</td>
+                        <td>{{ c }}</td>
+                        <!-- <td><a class="nav-item nav-link" href="{{ url_for('delete_book', id=idx) }}"><input
+                                    type="submit" class="btn btn-outline-info" value="Delete"></a></td> -->
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </article>
+
+</div>
+
+
+{% endblock %}
